@@ -54,8 +54,12 @@ public class ScoringInfo extends Iced<ScoringInfo> {
     }
   }
 
-  /** For a given array of ScoringInfo return an array of the cross-validation, validation or training ScoreKeepers, as available. */
   public static ScoreKeeper[] scoreKeepers(ScoringInfo[] scoring_history) {
+    return scoreKeepers(scoring_history, ScoreKeeper.StoppingMethods.AUTO);
+  }
+
+  /** For a given array of ScoringInfo return an array of the cross-validation, validation or training ScoreKeepers, as available. */
+  public static ScoreKeeper[] scoreKeepers(ScoringInfo[] scoring_history, ScoreKeeper.StoppingMethods stoppingMethod) {
     ScoreKeeper[] sk = new ScoreKeeper[scoring_history.length];
     for (int i=0;i<sk.length;++i) {
       sk[i] = scoring_history[i].cross_validation ? scoring_history[i].scored_xval

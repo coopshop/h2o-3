@@ -32,6 +32,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
   public DeepLearning( DeepLearningParameters parms ) { super(parms); init(false); }
   public DeepLearning( DeepLearningParameters parms, Key<DeepLearningModel> key ) { super(parms,key); init(false); }
   public DeepLearning( boolean startup_once ) { super(new DeepLearningParameters(),startup_once); }
+  public boolean _validation_set_present = false;
 
   /** Types of models we can build with DeepLearning  */
   @Override public ModelCategory[] can_build() {
@@ -210,6 +211,8 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     @Override public void computeImpl() {
       init(true); //this can change the seed if it was set to -1
       long cs = _parms.checksum();
+      _validation_set_present = (_parms.valid() != null);
+
       // Something goes wrong
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(DeepLearning.this);
@@ -347,6 +350,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         if (model == null) {
           model = DKV.get(dest()).get();
         }
+        model._output._validation_set_present = _validation_set_present;
         Log.info("Model category: " + (_parms._autoencoder ? "Auto-Encoder" : isClassifier() ? "Classification" : "Regression"));
         final long model_size = model.model_info().size();
         Log.info("Number of model parameters (weights/biases): " + String.format("%,d", model_size));

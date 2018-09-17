@@ -987,7 +987,21 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO) {
         error("_fold_assignment", "Fold assignment is only allowed for cross-validation.");
       }
+
+      // cross-validation not enabled
+      if (_parms._stopping_method.equals(ScoreKeeper.StoppingMethods.xval))
+        error("_stopping_method", "Stopping method xval cannot be used when cross-validation is not enabled.");
+    } else { // with cross-validation enabled
+      if ((_parms.valid() != null) && _parms._stopping_method.equals(ScoreKeeper.StoppingMethods.train))
+        error("_stopping_method", "Stopping method train cannot be used when cross-validation " +
+                "and a validation dataset is provided.");
     }
+
+    if (_parms.valid() == null) { // no validation frame
+      if (_parms._stopping_method.equals(ScoreKeeper.StoppingMethods.valid))
+        error("_stopping_method", "Stopping method valid cannt be used without providing a validation dataset.");
+    }
+
     if (_parms._distribution == DistributionFamily.modified_huber) {
       error("_distribution", "Modified Huber distribution is not supported yet.");
     }
