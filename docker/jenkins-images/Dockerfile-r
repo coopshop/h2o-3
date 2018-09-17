@@ -1,0 +1,11 @@
+ARG GPU_SUFFIX=''
+ARG FROM_VERSION
+FROM docker.h2o.ai/opsh2oai/h2o-3/dev-r-base${GPU_SUFFIX}:${FROM_VERSION}
+
+COPY scripts/install_R_version /tmp/
+ARG R_VERSION
+ENV R_VERSION=${R_VERSION}
+RUN \
+    /tmp/install_R_version ${R_VERSION} && \
+    rm /tmp/install_R_version
+ENV PATH ${PATH}:/usr/local/R/current/bin/

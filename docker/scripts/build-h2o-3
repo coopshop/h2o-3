@@ -1,7 +1,6 @@
 #! /bin/bash
 
-set -x
-set -e
+set -ex
 
 if [[ ! ${H2O_BRANCH} ]]; then
  echo "H2O_BRANCH must be set"

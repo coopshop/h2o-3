@@ -40,7 +40,7 @@ cd ${JAVA_INSTALL_PATH}
 
 curl -j -k -L -H "Cookie: oraclelicense=accept-securebackup-cookie" ${DOWNLOAD_URL} > jdk-linux-x64.tar.gz
 
-tar zxvf jdk-linux-x64.tar.gz
+tar zxf jdk-linux-x64.tar.gz
 rm jdk-linux-x64.tar.gz
 
 cd jdk*
@@ -53,5 +53,6 @@ echo "Creating activation script"
 echo """ #! /bin/bash
 
 rm -f /usr/lib/jvm/java-current-oracle
-ln -s -f ${SYMLINK_TARGET} /usr/lib/jvm/java-current-oracle """ > /usr/bin/activate_java_${JAVA_INSTALL_VERSION_MAJOR}
-chmod a+x /usr/bin/activate_java_${JAVA_INSTALL_VERSION_MAJOR}
+ln -s -f ${SYMLINK_TARGET} /usr/lib/jvm/java-current-oracle
+chmod a+w /usr/lib/jvm/java-current-oracle""" > /usr/bin/activate_java_${JAVA_INSTALL_VERSION_MAJOR}
+chmod a+wx /usr/bin/activate_java_${JAVA_INSTALL_VERSION_MAJOR}

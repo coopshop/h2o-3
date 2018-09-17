@@ -1,0 +1,13 @@
+ARG GPU_SUFFIX=''
+ARG FROM_VERSION
+FROM docker.h2o.ai/opsh2oai/h2o-3/dev-jdk-others-base${GPU_SUFFIX}:${FROM_VERSION}
+
+ARG JAVA_VERSION
+ENV JAVA_VERSION=${JAVA_VERSION}
+RUN \
+    /tmp/install_java_version ${JAVA_VERSION} && \
+    rm /tmp/install_java_version
+
+ENV \
+  JAVA_HOME=/usr/lib/jvm/java-current-oracle \
+  PATH=/usr/lib/jvm/java-current-oracle/bin:${PATH}
