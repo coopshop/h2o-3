@@ -784,91 +784,50 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _state.updateState(beta, l);
     }
 
-    private void fitCOD(Solver s) {
-      double[] betaCnd = _state.beta();
+    private void fitIRLSM(Solver s) {
+      GLMWeightsFun glmw = new GLMWeightsFun(_parms);
+      double [] betaCnd = _state.beta();
       LineSearchSolver ls = null;
       boolean firstIter = true;
       int iterCnt = 0;
-
-      while (true) { // will exit this loop when no improvements/changes detected in obj or gradient
-        iterCnt++;
-        ComputationState.GramXY gram = _state.computeGram(betaCnd, s);
-
-        if (!_state._lsNeeded && (Double.isNaN(gram.likelihood) || _state.objective(gram.beta, gram.likelihood) > _state.objective() + _parms._objective_epsilon)) {
-          _state._lsNeeded = true;
-        } else {
-          if (!firstIter && !_state._lsNeeded && !progress(gram.beta, gram.likelihood)) {
-            System.out.println("DONE after " + (iterCnt - 1) + " iterations (1)");
-            return;
-          }
-          betaCnd = COD_solve(gram, _state._alpha, _state.lambda());
-        }
-        firstIter = false;
-        if (_state._lsNeeded) {
-          if (ls == null)
-            ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
-                    ? new MoreThuente(_state.gslvr(), _state.beta(), _state.ginfo())
-                    : new SimpleBacktrackingLS(_state.gslvr(), _state.beta().clone(), _state.l1pen(), _state.ginfo());
-          if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
-            Log.info(LogMsg("Ls failed " + ls));
-            return;
-          }
-          betaCnd = ls.getX();
-          if (!progress(betaCnd, ls.ginfo()))
-            return;
-        }
-      }
-    }
-
-
-    private void fitIRLSM(Solver s) {
-      if (s.equals(Solver.COORDINATE_DESCENT)) {
-        fitCOD(s);
-      } else {
-        double[] betaCnd = _state.beta();
-        LineSearchSolver ls = null;
-        boolean firstIter = true;
-        int iterCnt = 0;
-        try {
-          while (true) { // will exit this loop when no improvements/changes detected in obj or gradient
-            iterCnt++;
-            long t1 = System.currentTimeMillis();
-            ComputationState.GramXY gram = _state.computeGram(betaCnd, s);
-            long t2 = System.currentTimeMillis();
-            if (!_state._lsNeeded && (Double.isNaN(gram.likelihood) || _state.objective(gram.beta, gram.likelihood) > _state.objective() + _parms._objective_epsilon)) {
-              _state._lsNeeded = true;
-            } else {
-              if (!firstIter && !_state._lsNeeded && !progress(gram.beta, gram.likelihood)) {
-                System.out.println("DONE after " + (iterCnt - 1) + " iterations (1)");
-                return;
-              }
-              betaCnd = ADMM_solve(gram.gram, gram.xy);
+      try {
+        while (true) {
+          iterCnt++;
+          long t1 = System.currentTimeMillis();
+          ComputationState.GramXY gram = _state.computeGram(betaCnd,s);
+          long t2 = System.currentTimeMillis();
+          if (!_state._lsNeeded && (Double.isNaN(gram.likelihood) || _state.objective(gram.beta, gram.likelihood) > _state.objective() + _parms._objective_epsilon)) {
+            _state._lsNeeded = true;
+          } else {
+            if (!firstIter && !_state._lsNeeded && !progress(gram.beta, gram.likelihood)) {
+              System.out.println("DONE after " + (iterCnt-1) + " iterations (1)");
+              return;
             }
-            firstIter = false;
-            long t3 = System.currentTimeMillis();
-            if (_state._lsNeeded) {
-              if (ls == null)
-                ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
-                        ? new MoreThuente(_state.gslvr(), _state.beta(), _state.ginfo())
-                        : new SimpleBacktrackingLS(_state.gslvr(), _state.beta().clone(), _state.l1pen(), _state.ginfo());
-              if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
-                Log.info(LogMsg("Ls failed " + ls));
-                return;
-              }
-              betaCnd = ls.getX();
-              if (!progress(betaCnd, ls.ginfo()))
-                return;
-              long t4 = System.currentTimeMillis();
-              Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "=" + (t4 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
-            } else
-              Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "=" + (t3 - t1) + "ms, step = " + 1 + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
+            betaCnd = s == Solver.COORDINATE_DESCENT?COD_solve(gram,_state._alpha,_state.lambda()):ADMM_solve(gram.gram,gram.xy);
           }
-        } catch (NonSPDMatrixException e) {
-          Log.warn(LogMsg("Got Non SPD matrix, stopped."));
+          firstIter = false;
+          long t3 = System.currentTimeMillis();
+          if(_state._lsNeeded) {
+            if(ls == null)
+              ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
+                 ? new MoreThuente(_state.gslvr(),_state.beta(), _state.ginfo())
+                 : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo());
+            if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
+              Log.info(LogMsg("Ls failed " + ls));
+              return;
+            }
+            betaCnd = ls.getX();
+            if(!progress(betaCnd,ls.ginfo()))
+              return;
+            long t4 = System.currentTimeMillis();
+            Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "=" + (t4 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
+          } else
+            Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "=" + (t3 - t1) + "ms, step = " + 1 + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
         }
+      } catch(NonSPDMatrixException e) {
+        Log.warn(LogMsg("Got Non SPD matrix, stopped."));
       }
     }
-
 
     private void fitLBFGS() {
       double [] beta = _state.beta();
@@ -1511,7 +1470,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     int P = xy.length - 1;
     double maxDiff = 0;
 //    // CD loop
-    while (iter1++ < Math.max(P,500)) { // not sure why we want it to exceed 1
+    while (iter1++ < Math.max(P,500)) { 
       maxDiff = 0;
       for (int i = 0; i < activeData._cats; ++i) {
         for(int j = activeData._catOffsets[i]; j < activeData._catOffsets[i+1]; ++j) { // can do in parallel
